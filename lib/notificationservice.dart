@@ -1,0 +1,104 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+
+class NotificationService {
+  static final NotificationService _notificationService =
+      NotificationService._internal();
+
+  factory NotificationService() {
+    return _notificationService;
+  }
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  NotificationService._internal();
+
+  Future<void> initNotification() async {
+    final AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings("@mipmap/ic_launcher");
+
+    final IOSInitializationSettings initializationSettingsIOS =
+        IOSInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
+            android: initializationSettingsAndroid,
+            iOS: initializationSettingsIOS);
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> showNotification(
+      int id, String title, String body, int seconds) async {
+    print("HELLOO");
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds)),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+            'main_channel', 'Main Channel', 'Main channel notifications',
+            importance: Importance.max,
+            priority: Priority.max,
+            icon: "@mipmap/ic_launcher"),
+        iOS: IOSNotificationDetails(
+          sound: 'default.wav',
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidAllowWhileIdle: true,
+    );
+  }
+
+  Future<void> showSheduledNotification(
+      int id, String title, String body, int seconds) async {
+    print("HELLOO World");
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        _sheduleDaily(Time(8)),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+              'main_channel', 'Main Channel', 'Main channel notifications',
+              importance: Importance.max,
+              priority: Priority.max,
+              icon: "@mipmap/ic_launcher"),
+          iOS: IOSNotificationDetails(
+            sound: 'default.wav',
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        androidAllowWhileIdle: true,
+        matchDateTimeComponents: DateTimeComponents.time);
+  }
+
+  tz.TZDateTime _sheduleDaily(Time time) {
+    final now = tz.TZDateTime.now(tz.local);
+    final sheduleDate = tz.TZDateTime(tz.local, now.year, now.month, now.day,
+        time.hour, time.minute, time.second);
+
+    return sheduleDate.isBefore(now)
+        ? sheduleDate.add(Duration(days: 1))
+        : sheduleDate;
+  }
+
+  Future<void> cancelAllNotifications() async {
+    await flutterLocalNotificationsPlugin.cancelAll();
+  }
+}
